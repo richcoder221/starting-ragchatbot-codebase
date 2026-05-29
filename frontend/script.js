@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     createNewSession();
     loadCourseStats();
+    document.getElementById('newChatBtn').addEventListener('click', startNewChat);
 });
 
 // Event Listeners
@@ -122,10 +123,17 @@ function addMessage(content, type, sources = null, isWelcome = false) {
     let html = `<div class="message-content">${displayContent}</div>`;
     
     if (sources && sources.length > 0) {
+        const sourceLinks = sources.map(s => {
+            const label = escapeHtml(s.label || '');
+            if (s.url && (s.url.startsWith('http://') || s.url.startsWith('https://'))) {
+                return `<a href="${s.url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+            }
+            return label;
+        }).join(', ');
         html += `
             <details class="sources-collapsible">
                 <summary class="sources-header">Sources</summary>
-                <div class="sources-content">${sources.join(', ')}</div>
+                <div class="sources-content">${sourceLinks}</div>
             </details>
         `;
     }
@@ -147,6 +155,15 @@ function escapeHtml(text) {
 // Removed removeMessage function - no longer needed since we handle loading differently
 
 async function createNewSession() {
+    currentSessionId = null;
+    chatMessages.innerHTML = '';
+    addMessage('Welcome to the Course Materials Assistant! I can help you with questions about courses, lessons and specific content. What would you like to know?', 'assistant', null, true);
+}
+
+async function startNewChat() {
+    if (currentSessionId) {
+        await fetch(`${API_URL}/session/${currentSessionId}`, { method: 'DELETE' });
+    }
     currentSessionId = null;
     chatMessages.innerHTML = '';
     addMessage('Welcome to the Course Materials Assistant! I can help you with questions about courses, lessons and specific content. What would you like to know?', 'assistant', null, true);
