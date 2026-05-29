@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 
 class FakeConfig:
-    DEEPSEEK_API_KEY = "fake-key"
-    DEEPSEEK_MODEL = "deepseek-chat"
+    ANTHROPIC_API_KEY = "fake-key"
+    ANTHROPIC_MODEL = "claude-test"
     EMBEDDING_MODEL = "all-MiniLM-L6-v2"
     CHUNK_SIZE = 800
     CHUNK_OVERLAP = 100
@@ -74,7 +74,7 @@ class TestRAGSystemQuery:
 
         call_kwargs = rag.ai_generator.generate_response.call_args[1]
         assert "tools" in call_kwargs
-        tool_names = [t["function"]["name"] for t in call_kwargs["tools"]]
+        tool_names = [t["name"] for t in call_kwargs["tools"]]
         assert "search_course_content" in tool_names
 
     def test_query_passes_tool_manager_to_ai_generator(self, rag):

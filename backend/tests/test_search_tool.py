@@ -135,7 +135,7 @@ class TestToolManagerIntegration:
         manager.register_tool(tool)
         defs = manager.get_tool_definitions()
         assert len(defs) == 1
-        assert defs[0]["function"]["name"] == "search_course_content"
+        assert defs[0]["name"] == "search_course_content"
 
     def test_execute_tool_by_name(self, mock_store):
         manager = ToolManager()
