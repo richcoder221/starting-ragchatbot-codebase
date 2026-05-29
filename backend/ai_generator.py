@@ -1,9 +1,9 @@
-import json
-from openai import OpenAI
+import anthropic
 from typing import List, Optional, Dict, Any
 
+
 class AIGenerator:
-    """Handles interactions with DeepSeek API for generating responses"""
+    """Handles interactions with Anthropic's Claude API for generating responses"""
 
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to tools for course information.
 
@@ -33,22 +33,18 @@ Provide only the direct answer to what was asked.
 """
 
     def __init__(self, api_key: str, model: str):
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.deepseek.com"
-        )
+        self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
 
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
 
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None) -> str:
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
         """
@@ -58,68 +54,60 @@ Provide only the direct answer to what was asked.
             else self.SYSTEM_PROMPT
         )
 
-        messages = [
-            {"role": "system", "content": system_content},
-            {"role": "user", "content": query}
-        ]
-
         api_params = {
             **self.base_params,
-            "messages": messages
+            "messages": [{"role": "user", "content": query}],
+            "system": system_content,
         }
 
         if tools:
             api_params["tools"] = tools
-            api_params["tool_choice"] = "auto"
+            api_params["tool_choice"] = {"type": "auto"}
 
-        response = self.client.chat.completions.create(**api_params)
+        response = self.client.messages.create(**api_params)
 
-        if response.choices[0].finish_reason == "tool_calls" and tool_manager:
-            return self._handle_tool_execution(response, messages, tool_manager, tools=tools)
+        if response.stop_reason == "tool_use" and tool_manager:
+            return self._handle_tool_execution(response, api_params, tool_manager)
 
-        return response.choices[0].message.content
+        return response.content[0].text
 
-    def _handle_tool_execution(self, initial_response, messages: List, tool_manager, tools: Optional[List] = None) -> str:
+    def _handle_tool_execution(
+        self, initial_response, base_params: Dict[str, Any], tool_manager
+    ) -> str:
         """
         Handle tool calls in a loop, allowing Claude to chain multiple tool calls.
-        Each iteration appends tool results and re-calls the API with tools still available.
         """
-        messages = messages.copy()
+        messages = base_params["messages"].copy()
         response = initial_response
 
-        while response.choices[0].finish_reason == "tool_calls":
-            assistant_message = response.choices[0].message
+        while response.stop_reason == "tool_use":
+            messages.append({"role": "assistant", "content": response.content})
 
-            messages.append({
-                "role": "assistant",
-                "content": assistant_message.content or "",
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments
+            tool_results = []
+            for content_block in response.content:
+                if content_block.type == "tool_use":
+                    tool_result = tool_manager.execute_tool(
+                        content_block.name, **content_block.input
+                    )
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": content_block.id,
+                            "content": tool_result,
                         }
-                    }
-                    for tc in assistant_message.tool_calls
-                ]
-            })
+                    )
 
-            for tool_call in assistant_message.tool_calls:
-                tool_args = json.loads(tool_call.function.arguments)
-                tool_result = tool_manager.execute_tool(tool_call.function.name, **tool_args)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": tool_result
-                })
+            if tool_results:
+                messages.append({"role": "user", "content": tool_results})
 
-            api_params = {**self.base_params, "messages": messages}
-            if tools:
-                api_params["tools"] = tools
-                api_params["tool_choice"] = "auto"
+            api_params = {
+                **self.base_params,
+                "messages": messages,
+                "system": base_params["system"],
+                "tools": base_params.get("tools", []),
+                "tool_choice": {"type": "auto"},
+            }
 
-            response = self.client.chat.completions.create(**api_params)
+            response = self.client.messages.create(**api_params)
 
-        return response.choices[0].message.content
+        return response.content[0].text
