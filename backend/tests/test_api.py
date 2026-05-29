@@ -10,13 +10,13 @@ from test_helpers import (
     make_mock_rag,
 )
 
-
 pytestmark = pytest.mark.asyncio
 
 
 # ---------------------------------------------------------------------------
 # GET /
 # ---------------------------------------------------------------------------
+
 
 class TestRootEndpoint:
     async def test_returns_200(self, client: AsyncClient):
@@ -31,6 +31,7 @@ class TestRootEndpoint:
 # ---------------------------------------------------------------------------
 # POST /api/query
 # ---------------------------------------------------------------------------
+
 
 class TestQueryEndpoint:
     async def test_returns_200_with_valid_payload(self, client: AsyncClient):
@@ -89,6 +90,7 @@ class TestQueryEndpoint:
 # ---------------------------------------------------------------------------
 # GET /api/courses
 # ---------------------------------------------------------------------------
+
 
 class TestCoursesEndpoint:
     async def test_returns_200(self, client: AsyncClient):

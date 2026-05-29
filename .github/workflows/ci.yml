@@ -22,7 +22,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: uv sync --all-groups
+        run: uv sync --all-groups --frozen
 
       - name: Run black
         run: uv run black --check backend/
@@ -42,9 +42,12 @@ jobs:
           python-version: "3.13"
 
       - name: Install dependencies
-        run: uv sync --all-groups
+        run: uv sync --all-groups --frozen
+
+      - name: Add venv to PATH
+        run: echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
 
       - name: Run tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: uv run pytest --tb=short -q
+        run: pytest --tb=short -q

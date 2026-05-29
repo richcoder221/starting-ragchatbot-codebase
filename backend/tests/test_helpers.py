@@ -1,14 +1,15 @@
 """Shared test data and factory helpers."""
+
 from unittest.mock import MagicMock
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-
 # ---------------------------------------------------------------------------
 # Pydantic models (mirrors app.py — self-contained for tests)
 # ---------------------------------------------------------------------------
+
 
 class QueryRequest(BaseModel):
     query: str
@@ -40,6 +41,7 @@ SAMPLE_COURSES = ["Python Basics", "Advanced FastAPI"]
 # Mock RAG system factory
 # ---------------------------------------------------------------------------
 
+
 def make_mock_rag(
     answer: str = SAMPLE_ANSWER,
     sources: List[str] = None,
@@ -61,6 +63,7 @@ def make_mock_rag(
 # ---------------------------------------------------------------------------
 # Test FastAPI app factory (no static file mount)
 # ---------------------------------------------------------------------------
+
 
 def build_test_app(mock_rag=None) -> FastAPI:
     if mock_rag is None:
