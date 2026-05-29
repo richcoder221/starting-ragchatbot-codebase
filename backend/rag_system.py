@@ -33,7 +33,6 @@ class RAGSystem:
         self.outline_tool = CourseOutlineTool(self.vector_store)
         self.tool_manager.register_tool(self.outline_tool)
 
-
     def add_course_document(self, file_path: str) -> Tuple[Course, int]:
         """
         Add a single course document to the knowledge base.

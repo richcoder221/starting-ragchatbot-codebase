@@ -1,4 +1,5 @@
 """Tests for CourseSearchTool.execute() in backend/search_tools.py"""
+
 import pytest
 from unittest.mock import MagicMock, patch
 from vector_store import SearchResults
@@ -40,7 +41,9 @@ class TestCourseSearchToolExecute:
         assert "Lesson 1" in result
 
     def test_returns_error_message_on_store_error(self, tool, mock_store):
-        mock_store.search.return_value = make_search_results([], [], error="Search error: DB unavailable")
+        mock_store.search.return_value = make_search_results(
+            [], [], error="Search error: DB unavailable"
+        )
         result = tool.execute(query="what is RAG")
         assert "Search error" in result
         assert "DB unavailable" in result
@@ -132,7 +135,7 @@ class TestToolManagerIntegration:
         manager.register_tool(tool)
         defs = manager.get_tool_definitions()
         assert len(defs) == 1
-        assert defs[0]["function"]["name"] == "search_course_content"
+        assert defs[0]["name"] == "search_course_content"
 
     def test_execute_tool_by_name(self, mock_store):
         manager = ToolManager()

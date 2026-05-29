@@ -80,7 +80,9 @@ async def query_documents(request: QueryRequest):
 
         return QueryResponse(
             answer=answer,
-            sources=[Source(**s) if isinstance(s, dict) else Source(label=s) for s in sources],
+            sources=[
+                Source(**s) if isinstance(s, dict) else Source(label=s) for s in sources
+            ],
             session_id=session_id,
         )
     except Exception as e:

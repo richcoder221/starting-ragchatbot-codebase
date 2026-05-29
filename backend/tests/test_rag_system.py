@@ -1,11 +1,12 @@
 """Tests for RAGSystem.query() in backend/rag_system.py"""
+
 import pytest
 from unittest.mock import MagicMock, patch
 
 
 class FakeConfig:
-    DEEPSEEK_API_KEY = "fake-key"
-    DEEPSEEK_MODEL = "deepseek-chat"
+    ANTHROPIC_API_KEY = "fake-key"
+    ANTHROPIC_MODEL = "claude-test"
     EMBEDDING_MODEL = "all-MiniLM-L6-v2"
     CHUNK_SIZE = 800
     CHUNK_OVERLAP = 100
@@ -42,6 +43,7 @@ def rag(tmp_path):
 
         # Re-wire search tool to use the mocked vector store
         from search_tools import CourseSearchTool, CourseOutlineTool, ToolManager
+
         system.tool_manager = ToolManager()
         system.search_tool = CourseSearchTool(system._mock_vs)
         system.tool_manager.register_tool(system.search_tool)
@@ -72,7 +74,7 @@ class TestRAGSystemQuery:
 
         call_kwargs = rag.ai_generator.generate_response.call_args[1]
         assert "tools" in call_kwargs
-        tool_names = [t["function"]["name"] for t in call_kwargs["tools"]]
+        tool_names = [t["name"] for t in call_kwargs["tools"]]
         assert "search_course_content" in tool_names
 
     def test_query_passes_tool_manager_to_ai_generator(self, rag):
@@ -86,7 +88,9 @@ class TestRAGSystemQuery:
 
     def test_query_includes_conversation_history_when_session_exists(self, rag):
         rag.ai_generator.generate_response.return_value = "answer"
-        rag.session_manager.get_conversation_history.return_value = "User: hi\nAssistant: hello"
+        rag.session_manager.get_conversation_history.return_value = (
+            "User: hi\nAssistant: hello"
+        )
 
         rag.query("follow up question", session_id="sess1")
 
@@ -114,7 +118,9 @@ class TestRAGSystemQuery:
         rag._mock_vs.get_lesson_link.return_value = "https://example.com/lesson"
 
         # Simulate AIGenerator calling the tool directly
-        def side_effect(query, conversation_history=None, tools=None, tool_manager=None):
+        def side_effect(
+            query, conversation_history=None, tools=None, tool_manager=None
+        ):
             if tool_manager:
                 tool_manager.execute_tool("search_course_content", query="RAG")
             return "Here is the answer."
@@ -135,7 +141,9 @@ class TestRAGSystemQuery:
         )
         rag._mock_vs.get_lesson_link.return_value = "https://example.com"
 
-        def side_effect_first(query, conversation_history=None, tools=None, tool_manager=None):
+        def side_effect_first(
+            query, conversation_history=None, tools=None, tool_manager=None
+        ):
             if tool_manager:
                 tool_manager.execute_tool("search_course_content", query="topic")
             return "answer 1"
@@ -144,7 +152,9 @@ class TestRAGSystemQuery:
         rag.query("first question", session_id="s1")
 
         # Second query without tool calls — sources should be empty
-        rag._mock_vs.search.return_value = SearchResults(documents=[], metadata=[], distances=[])
+        rag._mock_vs.search.return_value = SearchResults(
+            documents=[], metadata=[], distances=[]
+        )
         rag.ai_generator.generate_response.side_effect = None
         rag.ai_generator.generate_response.return_value = "answer 2"
         _, sources2 = rag.query("second question", session_id="s1")

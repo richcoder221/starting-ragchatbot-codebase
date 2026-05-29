@@ -154,10 +154,11 @@ class CourseOutlineTool(Tool):
             "Lessons:",
         ]
         for lesson in outline["lessons"]:
-            lines.append(f"  Lesson {lesson['lesson_number']}: {lesson['lesson_title']}")
+            lines.append(
+                f"  Lesson {lesson['lesson_number']}: {lesson['lesson_title']}"
+            )
 
         return "\n".join(lines)
-
 
 
 class ToolManager:

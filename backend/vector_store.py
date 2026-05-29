@@ -292,7 +292,6 @@ class VectorStore:
             print(f"Error getting course outline: {e}")
         return None
 
-
     def get_lesson_link(self, course_title: str, lesson_number: int) -> Optional[str]:
         """Get lesson link for a given course title and lesson number"""
         import json
